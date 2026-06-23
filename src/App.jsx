@@ -742,29 +742,74 @@ function App() {
     }
   }
 
-  function downloadApplicationSummary(file, documents = []) {
-    const lines = [
-      `Dossier M-Motors #${file.id}`,
-      `Client : ${file.clientEmail || clientEmail}`,
-      `Véhicule : ${file.vehicleBrand} ${file.vehicleModel}`,
-      `Type : ${file.type === 'RENTAL' ? 'Location' : 'Achat'}`,
-      `Statut : ${statusLabels[file.status] || file.status}`,
-      `Date de dépôt : ${formatDate(file.createdAt)}`,
-      '',
-      'Documents :',
-      ...(documents.length
-        ? documents.map((document) => `- ${documentTypeLabels[document.type] || document.type} : ${document.fileName}`)
-        : ['- Aucun document enregistré']),
-    ]
+  async function downloadApplicationSummary(file) {
+    try {
+      resetFeedback()
 
-    const blob = new Blob([lines.join('\\n')], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `dossier-m-motors-${file.id}.txt`
-    link.click()
-    URL.revokeObjectURL(url)
+      const adminContext = page === 'admin'
+      const endpoint = adminContext
+        ? `/api/application-files/admin/${file.id}/summary.pdf`
+        : `/api/application-files/my/${file.id}/summary.pdf`
+
+      const headers = adminContext
+        ? authHeaders(adminEmail, adminPassword)
+        : authHeaders(clientEmail, clientPassword)
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers })
+
+      if (!response.ok) {
+        throw new Error('Impossible de télécharger le récapitulatif PDF.')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+
+      link.href = url
+      link.download = `recapitulatif-dossier-${file.id}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+
+      setMessage('Récapitulatif PDF téléchargé.')
+    } catch (exception) {
+      setError(exception.message || 'Impossible de télécharger le récapitulatif PDF.')
+    }
   }
+
+
+  async function downloadDocumentFile(documentFile, adminContext = false) {
+    try {
+      resetFeedback()
+
+      const headers = adminContext
+        ? authHeaders(adminEmail, adminPassword)
+        : authHeaders(clientEmail, clientPassword)
+
+      const response = await fetch(`${API_BASE_URL}/api/document-files/${documentFile.id}/download`, { headers })
+
+      if (!response.ok) {
+        throw new Error('Impossible de télécharger le document.')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+
+      link.href = url
+      link.download = documentFile.fileName || `document-${documentFile.id}`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+
+      setMessage('Document téléchargé.')
+    } catch (exception) {
+      setError(exception.message || 'Impossible de télécharger le document.')
+    }
+  }
+
 
   async function switchVehicleMode(vehicle) {
     const newMode = vehicle.mode === 'SALE' ? 'RENTAL' : 'SALE'
@@ -1095,15 +1140,15 @@ function App() {
                             <div className="document-list">
                               {documents.map((documentFile) => (
                                 <div className="document-item document-item-managed" key={documentFile.id}>
-                                  <a
-                                    href={`${API_BASE_URL}/api/document-files/${documentFile.id}/download`}
-                                    target="_blank"
-                                    rel="noreferrer"
+                                  <button
+                                    className="document-item"
+                                    type="button"
+                                    onClick={() => downloadDocumentFile(documentFile, false)}
                                   >
                                     <span>{documentTypeLabels[documentFile.type] || documentFile.type}</span>
                                     <strong>{documentFile.fileName}</strong>
                                     <small>{formatFileSize(documentFile.size)}</small>
-                                  </a>
+                                  </button>
 
                                   {canUpdateDocuments && (
                                     <button
@@ -1184,7 +1229,7 @@ function App() {
                             <button
                               className="primary add-document-button"
                               type="button"
-                              onClick={() => addClientDocumentFromInputs(file.id, documents)}
+                              onClick={() => addClientDocument(file.id, form, documents)}
                             >
                               Ajouter au dossier
                             </button>
@@ -1339,17 +1384,16 @@ function App() {
                             ) : (
                               <div className="document-list">
                                 {documents.map((documentFile) => (
-                                  <a
+                                  <button
                                     className="document-item"
                                     key={documentFile.id}
-                                    href={`${API_BASE_URL}/api/document-files/${documentFile.id}/download`}
-                                    target="_blank"
-                                    rel="noreferrer"
+                                    type="button"
+                                    onClick={() => downloadDocumentFile(documentFile, true)}
                                   >
                                     <span>{documentTypeLabels[documentFile.type] || documentFile.type}</span>
                                     <strong>{documentFile.fileName}</strong>
                                     <small>{formatFileSize(documentFile.size)}</small>
-                                  </a>
+                                  </button>
                                 ))}
                               </div>
                             )}
