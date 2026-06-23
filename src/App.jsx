@@ -847,7 +847,7 @@ function App() {
           <span className="brand-mark">M</span>
           <span>
             <strong>M-Motors</strong>
-            <small>Premium mobility platform</small>
+            <small>Achat VO & location avec option</small>
           </span>
         </button>
 
@@ -866,12 +866,13 @@ function App() {
 
       <section className="hero">
         <div>
-          <p className="eyebrow">Sélection premium de véhicules</p>
+          <p className="eyebrow">Depuis 1987, spécialiste du véhicule d’occasion</p>
           <h1>Acheter ou louer votre prochain véhicule en toute simplicité</h1>
           <p>
-            Recherchez un véhicule disponible, consultez sa fiche détaillée et
-            déposez votre dossier depuis un espace client sécurisé. Les équipes
-            M-Motors suivent ensuite chaque demande depuis le back-office.
+            M-Motors accompagne l’achat de véhicules d’occasion et la location
+            longue durée avec option d’achat. Consultez les véhicules disponibles,
+            déposez un dossier 100 % dématérialisé et suivez son traitement
+            depuis votre espace client.
           </p>
 
           <div className="hero-actions">
@@ -1001,7 +1002,19 @@ function App() {
             </div>
 
             <aside className="side-panel">
-              <h2>Fiche véhicule</h2>
+              <div className="side-panel-header">
+                <h2>Fiche véhicule</h2>
+                {selectedVehicle && (
+                  <button
+                    className="side-panel-close"
+                    type="button"
+                    aria-label="Fermer la fiche véhicule"
+                    onClick={() => setSelectedVehicle(null)}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
 
               {selectedVehicle ? (
                 <>
